@@ -27,7 +27,6 @@ from eval.cls_eval import validate
 
 
 def parse_option():
-
     parser = argparse.ArgumentParser('argument for training')
 
     parser.add_argument('--eval_freq', type=int, default=10, help='meta-eval frequency')
