@@ -87,6 +87,7 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             
             if classifier in ['LR', 'NN', 'Cosine']:
                 acc.append(metrics.accuracy_score(query_ys, query_ys_pred))
+            print(mean_confidence_interval(acc))
                 
 
     return mean_confidence_interval(acc)

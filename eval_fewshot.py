@@ -36,7 +36,7 @@ def parse_option():
     parser.add_argument('--data_root', type=str, default='', help='path to data root')
 
     # meta setting
-    parser.add_argument('--n_test_runs', type=int, default=600, metavar='N',
+    parser.add_argument('--n_test_runs', type=int, default=100, metavar='N',
                         help='Number of test runs')
     parser.add_argument('--n_ways', type=int, default=5, metavar='N',
                         help='Number of classes for doing each classification run')
@@ -152,6 +152,9 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         model = model.cuda()
         cudnn.benchmark = True
+
+    import warnings
+    warnings.filterwarnings('ignore') 
 
     # evalation
     # start = time.time()

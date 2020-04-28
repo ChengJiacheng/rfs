@@ -1,0 +1,16 @@
+{'classifier': 'CVGB',
+ 'data_aug': True,
+ 'data_root': './data/miniImageNet',
+ 'dataset': 'miniImageNet',
+ 'model': 'resnet12',
+ 'model_path': '/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_1/resnet12_last.pth',
+ 'n_aug_support_samples': 5,
+ 'n_queries': 15,
+ 'n_shots': 5,
+ 'n_test_runs': 100,
+ 'n_ways': 5,
+ 'num_workers': 3,
+ 'test_batch_size': 1,
+ 'transform': 'A',
+ 'use_trainval': False}
+0it [00:00, ?it/s]
