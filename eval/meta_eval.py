@@ -72,7 +72,7 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             elif classifier == 'SGB':
                 gbes_grow=DeepBoosting4(support_features, support_ys, TrainMethod="GrowDeep", n_estimators=5000000,GrowDeep_max_iterPerDepthNUM=500, GrowDeep_max_depthNUM=50, GrowDeep_max_no_improvement=3, 
                             GrowDeep_tol_no_improvement=0.00001,GrowDeep_init_depth=1,AllowGrowDeepRetrain=1, validation_fraction=0.2,n_iter_no_change=100,tol=0.01,tolAdjust=1,random_state=0,
-                            FixedDepth_max_depth=50, learning_rate=0.01,verbose=1, CrossVali_random_state=1, CrossVali_n_splits=3,
+                            FixedDepth_max_depth=50, learning_rate=0.01,verbose=0, CrossVali_random_state=1, CrossVali_n_splits=3,
                             CrossVali_max_depth_list=[1], CrossVali_verbose=2)
             else:
                 raise NotImplementedError('classifier not supported: {}'.format(classifier))
