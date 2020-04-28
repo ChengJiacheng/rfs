@@ -69,8 +69,8 @@ def parse_option():
 
 
 import pprint
+_utils_pp = pprint.PrettyPrinter()
 def pprint(x):
-    _utils_pp = pprint.PrettyPrinter()
     _utils_pp.pprint(x)
 
 if __name__ == '__main__':
