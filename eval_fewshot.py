@@ -51,6 +51,8 @@ def parse_option():
     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
                         help='Size of test batch)')
 
+    parser.add_argument('--classifier', type=str, default='NN', help='type of used classifier', choices=['LR', 'NN','Cosine'])
+    
     opt = parser.parse_args()
 
     if 'trainval' in opt.model_path:
@@ -153,27 +155,27 @@ if __name__ == '__main__':
 
     # evalation
     start = time.time()
-    val_acc, val_std = meta_test(model, meta_valloader)
+    val_acc, val_std = meta_test(model, meta_valloader, classifier=opt.classifier)
     val_time = time.time() - start
     print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std, val_time))
 
     start = time.time()
-    val_acc_feat, val_std_feat = meta_test(model, meta_valloader, use_logit=False)
+    val_acc_feat, val_std_feat = meta_test(model, meta_valloader, use_logit=False, classifier=opt.classifier)
     val_time = time.time() - start
     print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat, val_std_feat, val_time))
 
     start = time.time()
-    test_acc, test_std = meta_test(model, meta_testloader)
+    test_acc, test_std = meta_test(model, meta_testloader, classifier=opt.classifier)
     test_time = time.time() - start
     print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, test_time))
 
     start = time.time()
-    test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False)
+    test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False, classifier=opt.classifier)
     test_time = time.time() - start
     print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
 
 
     start = time.time()
-    test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False, is_norm=False)
+    test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False, is_norm=False, classifier=opt.classifier)
     test_time = time.time() - start
     print('test_acc_feat (no normalization): {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
