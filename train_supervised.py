@@ -191,6 +191,7 @@ def pprint(x):
     
 if __name__ == '__main__':
     opt = parse_option()
+    pprint(opt)
     1/0
 
     # dataloader
