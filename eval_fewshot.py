@@ -25,7 +25,7 @@ def parse_option():
 
     # load pretrained model
     parser.add_argument('--model', type=str, default='resnet12', choices=model_pool)
-    parser.add_argument('--model_path', type=str, default=None, help='absolute path to .pth model')
+    parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_1/resnet12_last.pth', help='absolute path to .pth model')
 
     # dataset
     parser.add_argument('--dataset', type=str, default='miniImageNet', choices=['miniImageNet', 'tieredImageNet',
