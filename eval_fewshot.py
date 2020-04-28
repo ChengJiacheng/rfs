@@ -51,7 +51,7 @@ def parse_option():
     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
                         help='Size of test batch)')
 
-    parser.add_argument('--classifier', type=str, default='NN', help='type of used classifier', choices=['LR', 'NN','Cosine'])
+    parser.add_argument('--classifier', type=str, default='NN', help='type of used classifier', choices=['LR', 'NN', 'Cosine', 'SGB'])
     
     opt = parser.parse_args()
 

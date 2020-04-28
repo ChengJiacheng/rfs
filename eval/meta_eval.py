@@ -12,6 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 
+from sgb import  DeepBoosting4, DeepXGBoosting, DeepXGBoosting_predict, DeepXGBoosting_score
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0 * np.array(data)
@@ -68,10 +69,19 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                 query_ys_pred = NN(support_features, support_ys, query_features)
             elif classifier == 'Cosine':
                 query_ys_pred = Cosine(support_features, support_ys, query_features)
+            elif classifier == 'SGB':
+                gbes_grow=DeepBoosting4(support_features, support_ys, TrainMethod="GrowDeep", n_estimators=5000000,GrowDeep_max_iterPerDepthNUM=500, GrowDeep_max_depthNUM=50, GrowDeep_max_no_improvement=3, 
+                            GrowDeep_tol_no_improvement=0.00001,GrowDeep_init_depth=1,AllowGrowDeepRetrain=1, validation_fraction=0.2,n_iter_no_change=100,tol=0.01,tolAdjust=1,random_state=0,
+                            FixedDepth_max_depth=50, learning_rate=0.01,verbose=1, CrossVali_random_state=1, CrossVali_n_splits=3,
+                            CrossVali_max_depth_list=[1], CrossVali_verbose=2)
             else:
                 raise NotImplementedError('classifier not supported: {}'.format(classifier))
-
-            acc.append(metrics.accuracy_score(query_ys, query_ys_pred))
+            
+            if classifier in ['LR', 'NN', 'Cosine']:
+                acc.append(metrics.accuracy_score(query_ys, query_ys_pred))
+            else:
+                acc.append(gbes_grow.score(query_features, query_ys_pred))
+                
 
     return mean_confidence_interval(acc)
 
