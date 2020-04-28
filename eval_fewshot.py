@@ -68,12 +68,17 @@ def parse_option():
     return opt
 
 
-def main():
+import pprint
+def pprint(x):
+    _utils_pp = pprint.PrettyPrinter()
+    _utils_pp.pprint(x)
 
+if __name__ == '__main__':
     opt = parse_option()
 
     # test loader
     args = opt
+    pprint(vars(args))
 
     if opt.dataset == 'miniImageNet':
         train_trans, test_trans = transforms_test_options[opt.transform]
@@ -166,7 +171,3 @@ def main():
     test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False)
     test_time = time.time() - start
     print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
-
-
-if __name__ == '__main__':
-    main()
