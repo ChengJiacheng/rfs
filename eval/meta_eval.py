@@ -74,13 +74,19 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                             GrowDeep_tol_no_improvement=0.00001,GrowDeep_init_depth=1,AllowGrowDeepRetrain=1, validation_fraction=0.2,n_iter_no_change=100,tol=0.01,tolAdjust=1,random_state=0,
                             FixedDepth_max_depth=50, learning_rate=0.01,verbose=0, CrossVali_random_state=1, CrossVali_n_splits=3,
                             CrossVali_max_depth_list=[1], CrossVali_verbose=2)
+                acc.append(gbes_grow.score(query_features, query_ys))
+            elif classifier == 'CVGB':
+                grid_searchNumiter=DeepBoosting4(support_features, support_ys, TrainMethod="CrossValidateDepthAndNumIterations", n_estimators=5000000,GrowDeep_max_iterPerDepthNUM=500, GrowDeep_max_depthNUM=50, GrowDeep_max_no_improvement=3, 
+                    GrowDeep_tol_no_improvement=0.00001,GrowDeep_init_depth=1,AllowGrowDeepRetrain=1, validation_fraction=0.2,n_iter_no_change=20,tol=0.01,random_state=0,
+                    FixedDepth_max_depth=50, learning_rate=0.01,verbose=0, CrossVali_random_state=1, CrossVali_n_splits=3,
+                    CrossVali_max_depth_list=[1,2,3,4,5,6,7,8,9,10,20,50], CrossVali_n_estimators_list=[100,250,500,750,1000,1500,2000], CrossVali_verbose=0)
+                acc.append(grid_searchNumiter.best_estimator_.score(query_features, query_ys))
+
             else:
                 raise NotImplementedError('classifier not supported: {}'.format(classifier))
             
             if classifier in ['LR', 'NN', 'Cosine']:
                 acc.append(metrics.accuracy_score(query_ys, query_ys_pred))
-            else:
-                acc.append(gbes_grow.score(query_features, query_ys))
                 
 
     return mean_confidence_interval(acc)
