@@ -184,14 +184,13 @@ def train(epoch, train_loader, model, criterion, optimizer, opt):
     return top1.avg, losses.avg
 
 import pprint
-_utils_pp = pprint.PrettyPrinter()
-
 def pprint(x):
+    _utils_pp = pprint.PrettyPrinter()
     _utils_pp.pprint(x)
     
 if __name__ == '__main__':
     opt = parse_option()
-    pprint(opt)
+    pprint(vars(opt))
     1/0
 
     # dataloader
