@@ -28,7 +28,7 @@ from xgboost import XGBClassifier
 import xgboost
 import time
 
-n_jobs = 32
+n_jobs = 16
 """
 ########## 
 DEEP BOOSTING
