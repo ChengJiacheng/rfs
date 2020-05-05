@@ -15,6 +15,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sgb import  DeepBoosting4, DeepXGBoosting, DeepXGBoosting_predict, DeepXGBoosting_score
 from sklearn.ensemble import AdaBoostClassifier
 
+from sklearn.svm import SVC
+from sklearn.ensemble import BaggingClassifier
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0 * np.array(data)
@@ -63,8 +65,7 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             query_ys = query_ys.view(-1).numpy()
 
             if classifier == 'LR':
-                clf = LogisticRegression(random_state=0, solver='lbfgs', max_iter=1000,
-                                         multi_class='multinomial')
+                clf = LogisticRegression(random_state=0, solver='lbfgs', max_iter=1000, multi_class='multinomial')
                 clf.fit(support_features, support_ys)
                 query_ys_pred = clf.predict(query_features)
             elif classifier == 'NN':
@@ -86,14 +87,56 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                     CrossVali_max_depth_list=[1,2,3,4,5,6,7,8,9,10,20,50], CrossVali_n_estimators_list=[100,250,500,750,1000,1500,2000], CrossVali_verbose=0)
                 acc.append(grid_searchNumiter.best_estimator_.score(query_features, query_ys))
             elif classifier == 'AdaBoost':
-                clf = AdaBoostClassifier(n_estimators=100, random_state=0)
+                # clf = AdaBoostClassifier(n_estimators=50, learning_rate=1, random_state=0)
+                base_estimator = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial') 
+                clf = AdaBoostClassifier(base_estimator = base_estimator, n_estimators=10, learning_rate=.1, random_state=0)
+                
                 clf.fit(support_features, support_ys)
                 acc.append(clf.score(query_features, query_ys))
-               
+            elif classifier == 'SVM':
+                clf = SVC(C=1, kernel='linear', gamma='scale', decision_function_shape = 'ovr', probability=True)
+
+                # clf = SVC(C=1, gamma='scale', decision_function_shape = 'ovr')
+                clf.fit(support_features, support_ys)
+                acc.append(clf.score(query_features, query_ys))               
+            elif classifier == 'bagging':
+                # clf = BaggingClassifier(base_estimator=SVC(), 
+                # max_features=64, n_jobs=2, max_samples=0.9, n_estimators=1, random_state=0).fit(support_features, support_ys)
+                clf = BaggingClassifier(base_estimator=LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial'), 
+                max_features=1.0, n_jobs=2, max_samples=1.0, n_estimators=50, random_state=0, verbose=0).fit(support_features, support_ys)
+                        
+                query_ys_pred = clf.predict(query_features)
+            elif classifier == 'ensemble':
+                base_clf = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial')
+                # base_clf = SVC(C=1, gamma='scale', decision_function_shape = 'ovr', probability=True)
+                # base_clf = SVC(C=1, kernel='linear', gamma='scale', decision_function_shape = 'ovr', probability=True)
+
+                clf1 = base_clf
+                clf1.fit(support_features, support_ys)
+                query_prob = clf1.predict_proba(query_features)
+
+                # clf2 = base_clf
+                # clf2.fit(support_features, support_ys)
+                # query_prob += clf2.predict_proba(query_features)         
+
+                # clf3 = base_clf
+                # clf3.fit(support_features, support_ys)
+                # query_prob += clf3.predict_proba(query_features)          
+
+                # clf4 = base_clf
+                # clf4.fit(support_features, support_ys)
+                # query_prob += clf4.predict_proba(query_features)      
+
+                # clf5 = base_clf
+                # clf5.fit(support_features, support_ys)
+                # query_prob += clf5.predict_proba(query_features)      
+                # query_prob = query_prob/ 2            
+                query_ys_pred = np.argmax(query_prob, axis=1)  
+                
             else:
                 raise NotImplementedError('classifier not supported: {}'.format(classifier))
             
-            if classifier in ['LR', 'NN', 'Cosine']:
+            if classifier in ['LR', 'NN', 'Cosine', 'bagging', 'ensemble']:
                 acc.append(metrics.accuracy_score(query_ys, query_ys_pred))
             if idx%10 == 0:
                 print(mean_confidence_interval(acc))
