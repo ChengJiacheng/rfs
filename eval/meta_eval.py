@@ -17,6 +17,32 @@ from sklearn.ensemble import AdaBoostClassifier
 
 from sklearn.svm import SVC
 from sklearn.ensemble import BaggingClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+import time
+
+def TicTocGenerator():
+    # Generator that returns time differences
+    ti = 0           # initial time
+    tf = time.time() # final time
+    while True:
+        ti = tf
+        tf = time.time()
+        yield tf-ti # returns the time difference
+
+TicToc = TicTocGenerator() # create an instance of the TicTocGen generator
+
+# This will be the main function through which we define both tic() and toc()
+def toc(tempBool=True):
+    # Prints the time difference yielded by generator instance TicToc
+    tempTimeInterval = next(TicToc)
+    if tempBool:
+        print( "Elapsed time: %f seconds.\n" %tempTimeInterval )
+
+def tic():
+    # Records a time in TicToc, marks the beginning of a time interval
+    toc(False)
+
 
 def mean_confidence_interval(data, confidence=0.95):
     a = 1.0 * np.array(data)
@@ -65,9 +91,14 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             query_ys = query_ys.view(-1).numpy()
 
             if classifier == 'LR':
-                clf = LogisticRegression(random_state=0, solver='lbfgs', max_iter=1000, multi_class='multinomial')
+                # tic()
+                clf = LogisticRegression(random_state=0, solver='saga', max_iter=50, multi_class='multinomial', tol=1e-4, verbose=0)
                 clf.fit(support_features, support_ys)
                 query_ys_pred = clf.predict(query_features)
+                # toc()
+
+                # print("train acc: %f"%(clf.score(support_features, support_ys)) )
+
             elif classifier == 'NN':
                 query_ys_pred = NN(support_features, support_ys, query_features)
             elif classifier == 'Cosine':
@@ -87,12 +118,25 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                     CrossVali_max_depth_list=[1,2,3,4,5,6,7,8,9,10,20,50], CrossVali_n_estimators_list=[100,250,500,750,1000,1500,2000], CrossVali_verbose=0)
                 acc.append(grid_searchNumiter.best_estimator_.score(query_features, query_ys))
             elif classifier == 'AdaBoost':
-                # clf = AdaBoostClassifier(n_estimators=50, learning_rate=1, random_state=0)
+                # base_estimator = AdaBoostClassifier(n_estimators=20, learning_rate=.1, random_state=0)
                 base_estimator = LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial') 
-                clf = AdaBoostClassifier(base_estimator = base_estimator, n_estimators=10, learning_rate=.1, random_state=0)
-                
+                clf = AdaBoostClassifier(base_estimator = base_estimator, n_estimators=10, learning_rate=.1, random_state=0, algorithm='SAMME.R')
+
+
                 clf.fit(support_features, support_ys)
                 acc.append(clf.score(query_features, query_ys))
+
+                # print("train acc: %f"%(clf.score(support_features, support_ys)) )
+            elif classifier == 'LDA':
+                clf = LinearDiscriminantAnalysis(shrinkage='auto', n_components = 8)     
+                clf.fit(support_features, support_ys)          
+                acc.append(clf.score(query_features, query_ys))                 
+
+            elif classifier == 'QDA':
+                clf = QuadraticDiscriminantAnalysis(reg_param=1)     
+                clf.fit(support_features, support_ys)          
+                acc.append(clf.score(query_features, query_ys))               
+
             elif classifier == 'SVM':
                 clf = SVC(C=1, kernel='linear', gamma='scale', decision_function_shape = 'ovr', probability=True)
 
@@ -103,7 +147,7 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                 # clf = BaggingClassifier(base_estimator=SVC(), 
                 # max_features=64, n_jobs=2, max_samples=0.9, n_estimators=1, random_state=0).fit(support_features, support_ys)
                 clf = BaggingClassifier(base_estimator=LogisticRegression(solver='lbfgs', max_iter=100, multi_class='multinomial'), 
-                max_features=1.0, n_jobs=2, max_samples=1.0, n_estimators=50, random_state=0, verbose=0).fit(support_features, support_ys)
+                max_features=1.0, n_jobs=1, max_samples=1.0, n_estimators=1, random_state=0, verbose=0).fit(support_features, support_ys)
                         
                 query_ys_pred = clf.predict(query_features)
             elif classifier == 'ensemble':
@@ -111,26 +155,16 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                 # base_clf = SVC(C=1, gamma='scale', decision_function_shape = 'ovr', probability=True)
                 # base_clf = SVC(C=1, kernel='linear', gamma='scale', decision_function_shape = 'ovr', probability=True)
 
-                clf1 = base_clf
-                clf1.fit(support_features, support_ys)
-                query_prob = clf1.predict_proba(query_features)
+                for i in range(50):
+                    weak_clf = LogisticRegression(random_state=i, solver='lbfgs', max_iter=100, multi_class='multinomial')
+                    weak_clf.fit(support_features, support_ys)
 
-                # clf2 = base_clf
-                # clf2.fit(support_features, support_ys)
-                # query_prob += clf2.predict_proba(query_features)         
+                    if i == 0:
+                        query_prob = weak_clf.predict_proba(query_features)
+                    else:
+                        query_prob += weak_clf.predict_proba(query_features)
 
-                # clf3 = base_clf
-                # clf3.fit(support_features, support_ys)
-                # query_prob += clf3.predict_proba(query_features)          
 
-                # clf4 = base_clf
-                # clf4.fit(support_features, support_ys)
-                # query_prob += clf4.predict_proba(query_features)      
-
-                # clf5 = base_clf
-                # clf5.fit(support_features, support_ys)
-                # query_prob += clf5.predict_proba(query_features)      
-                # query_prob = query_prob/ 2            
                 query_ys_pred = np.argmax(query_prob, axis=1)  
                 
             else:
