@@ -1,2 +1,2 @@
 echo "Hello World !" 
-python -u train_supervised.py > log5.out
+python -u train_supervised.py > log8.out

@@ -155,7 +155,7 @@ class ResNet(nn.Module):
         self.inplanes = 3
         self.use_se = use_se
         self.layer1 = self._make_layer(block, n_blocks[0], 64,
-                                       stride=1, drop_rate=drop_rate)
+                                       stride=2, drop_rate=drop_rate)
         self.layer2 = self._make_layer(block, n_blocks[1], 160,
                                        stride=2, drop_rate=drop_rate)
         self.layer3 = self._make_layer(block, n_blocks[2], 320,
