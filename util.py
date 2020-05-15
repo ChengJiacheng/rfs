@@ -82,3 +82,10 @@ def accuracy(output, target, topk=(1,)):
             correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+def print_versions():
+    import PIL
+    print('PIL version: ', PIL.__version__)
+    print('torch version:', torch.__version__)
+    print('cuda version:', torch.version.cuda)
+    print('cudnn version: ', torch.backends.cudnn.version())

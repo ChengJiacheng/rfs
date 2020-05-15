@@ -18,6 +18,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import BaggingClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.neighbors import KNeighborsClassifier
 
 import time
 
@@ -58,7 +59,7 @@ def normalize(x):
     return out
 
 
-def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
+def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR', model_list=None):
     net = net.eval()
     acc = []
 
@@ -72,8 +73,41 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             query_xs = query_xs.view(-1, height, width, channel)
 
             if use_logit:
-                support_features = net(support_xs).view(support_xs.size(0), -1)
-                query_features = net(query_xs).view(query_xs.size(0), -1)
+
+                if model_list:
+                    temp = 1
+
+                    for model_path in model_list:
+                        ckpt = torch.load(model_path)
+                        net.load_state_dict(ckpt['model'])
+
+                        if temp:
+                            temp = 0
+                            support_features = net(support_xs).view(support_xs.size(0), -1)
+                            query_features = net(query_xs).view(query_xs.size(0), -1)
+                            # output = torch.nn.functional.softmax(model(input), dim=1)
+                            
+                            # support_features = normalize(support_features)
+                            # query_features = normalize(query_features)
+
+                        else:
+                            # print(2)
+
+                            
+                            support_features += net(support_xs).view(support_xs.size(0), -1)
+                            query_features += net(query_xs).view(query_xs.size(0), -1)        
+
+                            # support_features = torch.cat((support_features, net(support_xs).view(support_xs.size(0), -1)), dim=0)
+
+                            # support_features += normalize(net(support_xs).view(support_xs.size(0), -1))
+                            # query_features += normalize(net(query_xs).view(query_xs.size(0), -1))   
+
+                    # support_ys = support_ys.repeat((1, len(model_list)))       
+                    query_features /= len(model_list)
+
+                else:
+                    support_features = net(support_xs).view(support_xs.size(0), -1)
+                    query_features = net(query_xs).view(query_xs.size(0), -1)
             else:
                 feat_support, _ = net(support_xs, is_feat=True)
                 support_features = feat_support[-1].view(support_xs.size(0), -1)
@@ -92,7 +126,7 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
 
             if classifier == 'LR':
                 # tic()
-                clf = LogisticRegression(random_state=0, solver='saga', max_iter=50, multi_class='multinomial', tol=1e-4, verbose=0)
+                clf = LogisticRegression(random_state=0, solver='sag', max_iter=100, multi_class='multinomial', tol=1e-4, verbose=0, fit_intercept=True, C=1, penalty='l2')
                 clf.fit(support_features, support_ys)
                 query_ys_pred = clf.predict(query_features)
                 # toc()
@@ -101,6 +135,13 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
 
             elif classifier == 'NN':
                 query_ys_pred = NN(support_features, support_ys, query_features)
+            elif classifier == 'kNN':
+                clf = KNeighborsClassifier(n_neighbors=1)
+
+                clf.fit(support_features, support_ys)
+                query_ys_pred = NN(support_features, support_ys, query_features)
+                acc.append(clf.score(query_features, query_ys))
+
             elif classifier == 'Cosine':
                 query_ys_pred = Cosine(support_features, support_ys, query_features)
             elif classifier == 'SGB':
@@ -138,7 +179,7 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
                 acc.append(clf.score(query_features, query_ys))               
 
             elif classifier == 'SVM':
-                clf = SVC(C=1, kernel='linear', gamma='scale', decision_function_shape = 'ovr', probability=True)
+                clf = SVC(C=1, kernel='rbf', gamma='scale', decision_function_shape = 'ovr', probability=True)
 
                 # clf = SVC(C=1, gamma='scale', decision_function_shape = 'ovr')
                 clf.fit(support_features, support_ys)

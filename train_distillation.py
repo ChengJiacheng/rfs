@@ -28,10 +28,17 @@ from dataset.tiered_imagenet import TieredImageNet, MetaTieredImageNet
 from dataset.cifar import CIFAR100, MetaCIFAR100
 from dataset.transform_cfg import transforms_options, transforms_list
 
-from util import adjust_learning_rate, accuracy, AverageMeter
+from util import adjust_learning_rate, accuracy, AverageMeter, print_versions
 from eval.meta_eval import meta_test
 from eval.cls_eval import validate
 
+print_versions()
+
+import pprint
+_utils_pp = pprint.PrettyPrinter()
+def pprint(x):
+    _utils_pp.pprint(x)
+    
 
 def parse_option():
 
@@ -42,7 +49,7 @@ def parse_option():
     parser.add_argument('--tb_freq', type=int, default=500, help='tb frequency')
     parser.add_argument('--save_freq', type=int, default=10, help='save frequency')
     parser.add_argument('--batch_size', type=int, default=64, help='batch_size')
-    parser.add_argument('--num_workers', type=int, default=8, help='num of workers to use')
+    parser.add_argument('--num_workers', type=int, default=0, help='num of workers to use')
     parser.add_argument('--epochs', type=int, default=100, help='number of training epochs')
 
     # optimization
@@ -59,14 +66,14 @@ def parse_option():
     parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
 
     # path to teacher model
-    parser.add_argument('--path_t', type=str, default=None, help='teacher model snapshot')
+    parser.add_argument('--path_t', type=str, default='/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_5/resnet12_last.pth', help='teacher model snapshot')
 
     # distillation
     parser.add_argument('--distill', type=str, default='kd', choices=['kd', 'contrast', 'hint', 'attention'])
-    parser.add_argument('--trial', type=str, default='1', help='trial id')
+    parser.add_argument('--trial', type=str, default='born1', help='trial id')
 
-    parser.add_argument('-r', '--gamma', type=float, default=1, help='weight for classification')
-    parser.add_argument('-a', '--alpha', type=float, default=0, help='weight balance for KD')
+    parser.add_argument('-r', '--gamma', type=float, default=0.5, help='weight for classification')
+    parser.add_argument('-a', '--alpha', type=float, default=1.0, help='weight balance for KD')
     parser.add_argument('-b', '--beta', type=float, default=0, help='weight balance for other losses')
 
     # KL distillation
@@ -164,6 +171,7 @@ def main():
     best_acc = 0
 
     opt = parse_option()
+    pprint(vars(opt))
 
     # tensorboard logger
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)

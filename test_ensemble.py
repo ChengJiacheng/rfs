@@ -21,12 +21,9 @@ from dataset.tiered_imagenet import TieredImageNet, MetaTieredImageNet
 from dataset.cifar import CIFAR100, MetaCIFAR100
 from dataset.transform_cfg import transforms_options, transforms_list
 
-from util import adjust_learning_rate, accuracy, AverageMeter, print_versions
+from util import adjust_learning_rate, accuracy, AverageMeter
 from eval.meta_eval import meta_test
-from eval.cls_eval import validate
-
-print_versions()
-
+from eval.cls_eval import validate_ensemble
 
 
 def parse_option():
@@ -78,7 +75,7 @@ def parse_option():
     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
                         help='Size of test batch)')
 
-    parser.add_argument('-t', '--trial', type=str, default='6', help='the experiment id')
+    parser.add_argument('-t', '--trial', type=str, default='1', help='the experiment id')
 
     opt = parser.parse_args()
 
@@ -127,70 +124,12 @@ def parse_option():
 
     return opt
 
-
-
-def train(epoch, train_loader, model, criterion, optimizer, opt):
-    """One epoch training"""
-    model.train()
-
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
-
-    end = time.time()
-    for idx, (input, target, _) in enumerate(train_loader):
-        data_time.update(time.time() - end)
-
-        input = input.float()
-        if torch.cuda.is_available():
-            input = input.cuda()
-            target = target.cuda()
-
-        # ===================forward=====================
-        output = model(input)
-        loss = criterion(output, target)
-
-        acc1, acc5 = accuracy(output, target, topk=(1, 5))
-        losses.update(loss.item(), input.size(0))
-        top1.update(acc1[0], input.size(0))
-        top5.update(acc5[0], input.size(0))
-
-        # ===================backward=====================
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        # ===================meters=====================
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        # tensorboard logger
-        pass
-
-        # print info
-        if idx % opt.print_freq == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
-                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Acc@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-                   epoch, idx, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1, top5=top5))
-            sys.stdout.flush()
-
-    print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
-          .format(top1=top1, top5=top5))
-
-    return top1.avg, losses.avg
-
 import pprint
 _utils_pp = pprint.PrettyPrinter()
 def pprint(x):
     _utils_pp.pprint(x)
-    
+
+
 if __name__ == '__main__':
     opt = parse_option()
     pprint(vars(opt))
@@ -291,11 +230,9 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         if opt.n_gpu > 1:
             model = nn.DataParallel(model)
-        else:
-            torch.cuda.set_device(0)
         model = model.cuda()
         criterion = criterion.cuda()
-        # cudnn.benchmark = True
+        cudnn.benchmark = True
 
     # tensorboard
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
@@ -306,42 +243,14 @@ if __name__ == '__main__':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, opt.epochs, eta_min, -1)
 
     # routine: supervised pre-training
-    for epoch in range(1, opt.epochs + 1):
 
-        if opt.cosine:
-            scheduler.step()
-        else:
-            adjust_learning_rate(epoch, opt, optimizer)
-        print("==> training...")
+    model_list = ['/data/jiacheng/rfs/archives/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_2/ckpt_epoch_100.pth',
+    '/data/jiacheng/rfs/archives/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_1/resnet12_last.pth']
 
-        time1 = time.time()
-        train_acc, train_loss = train(epoch, train_loader, model, criterion, optimizer, opt)
-        time2 = time.time()
-        print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
-
-        logger.log_value('train_acc', train_acc, epoch)
-        logger.log_value('train_loss', train_loss, epoch)
-
-        test_acc, test_acc_top5, test_loss = validate(val_loader, model, criterion, opt)
-
-        logger.log_value('test_acc', test_acc, epoch)
-        logger.log_value('test_acc_top5', test_acc_top5, epoch)
-        logger.log_value('test_loss', test_loss, epoch)
-
-        # regular saving
-        if epoch % opt.save_freq == 0:
-            print('==> Saving...')
-            state = {
-                'epoch': epoch,
-                'model': model.state_dict() if opt.n_gpu <= 1 else model.module.state_dict(),
-            }
-            save_file = os.path.join(opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
-            torch.save(state, save_file)
-
-    # save the last model
-    state = {
-        'opt': opt,
-        'model': model.state_dict() if opt.n_gpu <= 1 else model.module.state_dict(),
-    }
-    save_file = os.path.join(opt.save_folder, '{}_last.pth'.format(opt.model))
-    torch.save(state, save_file)
+    model_list = ['/data/jiacheng/rfs/archives/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_2/ckpt_epoch_100.pth',
+    '/data/jiacheng/rfs/archives/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_1/resnet12_last.pth',
+    '/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_3/resnet12_last.pth',
+    '/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_4/resnet12_last.pth',
+    '/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_5/resnet12_last.pth']
+    
+    test_acc, test_acc_top5 = validate_ensemble(val_loader, model, criterion, opt, model_list=model_list)

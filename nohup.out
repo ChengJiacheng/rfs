@@ -1,5 +1,0 @@
-Fatal Python error: init_sys_streams: <stdin> is a directory, cannot continue
-Python runtime state: core initialized
-
-Current thread 0x00007fedeea2a740 (most recent call first):
-<no Python frame>
