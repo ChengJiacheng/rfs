@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 from torch.distributions import Bernoulli
-
+from util import normalize
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -149,8 +149,11 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
 
     def __init__(self, block, n_blocks, keep_prob=1.0, avg_pool=False, drop_rate=0.0,
-                 dropblock_size=5, num_classes=-1, use_se=False):
+                 dropblock_size=5, num_classes=-1, use_se=False, l2_normalize = False, radius=1.):
         super(ResNet, self).__init__()
+
+        self.l2_normalize = l2_normalize
+        self.radius = radius
 
         self.inplanes = 3
         self.use_se = use_se
@@ -179,7 +182,8 @@ class ResNet(nn.Module):
 
         self.num_classes = num_classes
         if self.num_classes > 0:
-            self.classifier = nn.Linear(640, self.num_classes)
+            # self.classifier = nn.Linear(640, self.num_classes, bias=False)
+            self.classifier = nn.Linear(640, self.num_classes, bias=True)
 
     def _make_layer(self, block, n_block, planes, stride=1, drop_rate=0.0, drop_block=False, block_size=1):
         downsample = None
@@ -220,9 +224,14 @@ class ResNet(nn.Module):
         if self.keep_avg_pool:
             x = self.avgpool(x)
         x = x.view(x.size(0), -1)
+        if self.l2_normalize:
+            x = normalize(x) * self.radius
+
         feat = x
         if self.num_classes > 0:
             x = self.classifier(x)
+
+
 
         if is_feat:
             return [f0, f1, f2, f3, feat], x

@@ -25,6 +25,7 @@ from util import adjust_learning_rate, accuracy, AverageMeter, print_versions
 from eval.meta_eval import meta_test
 from eval.cls_eval import validate
 
+import numpy as np
 print_versions()
 
 
@@ -38,7 +39,7 @@ def parse_option():
     parser.add_argument('--save_freq', type=int, default=10, help='save frequency')
     parser.add_argument('--batch_size', type=int, default=64, help='batch_size')
     # parser.add_argument('--num_workers', type=int, default=8, help='num of workers to use')
-    parser.add_argument('--num_workers', type=int, default=0, help='num of workers to use')
+    parser.add_argument('--num_workers', type=int, default=4, help='num of workers to use')
     parser.add_argument('--epochs', type=int, default=100, help='number of training epochs')
 
     # optimization
@@ -78,7 +79,10 @@ def parse_option():
     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
                         help='Size of test batch)')
 
-    parser.add_argument('-t', '--trial', type=str, default='6', help='the experiment id')
+    parser.add_argument('-t', '--trial', type=str, default='x4', help='the experiment id')
+    parser.add_argument('--smoothing', type=float, default=0., help='label smoothing')
+    parser.add_argument('--radius', type=float, default=32)
+    parser.add_argument('--l2_normalize', default=False)
 
     opt = parser.parse_args()
 
@@ -127,6 +131,23 @@ def parse_option():
 
     return opt
 
+
+class LabelSmoothingLoss(nn.Module):
+    def __init__(self, classes, smoothing=0.0, dim=-1):
+        super(LabelSmoothingLoss, self).__init__()
+        self.confidence = 1.0 - smoothing
+        self.smoothing = smoothing
+        self.cls = classes
+        self.dim = dim
+
+    def forward(self, pred, target):
+        pred = pred.log_softmax(dim=self.dim)
+        with torch.no_grad():
+            # true_dist = pred.data.clone()
+            true_dist = torch.zeros_like(pred)
+            true_dist.fill_(self.smoothing / (self.cls - 1))
+            true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
+        return torch.mean(torch.sum(-true_dist * pred, dim=self.dim))
 
 
 def train(epoch, train_loader, model, criterion, optimizer, opt):
@@ -274,6 +295,16 @@ if __name__ == '__main__':
 
     # model
     model = create_model(opt.model, n_cls, opt.dataset)
+    model.l2_normalize = opt.l2_normalize
+    model.radius = opt.radius
+
+
+    model.classifier.weight.data = torch.FloatTensor(np.load('classifier_weight.npy'))
+    for param in model.classifier.parameters():
+        param.requires_grad = False  
+        
+    print(model.classifier.weight)
+
 
     # optimizer
     if opt.adam:
@@ -287,6 +318,7 @@ if __name__ == '__main__':
                               weight_decay=opt.weight_decay)
 
     criterion = nn.CrossEntropyLoss()
+    # criterion = LabelSmoothingLoss(classes=n_cls, smoothing=opt.smoothing)
 
     if torch.cuda.is_available():
         if opt.n_gpu > 1:
@@ -345,3 +377,5 @@ if __name__ == '__main__':
     }
     save_file = os.path.join(opt.save_folder, '{}_last.pth'.format(opt.model))
     torch.save(state, save_file)
+
+    print(model.classifier.weight)

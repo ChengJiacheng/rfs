@@ -89,3 +89,9 @@ def print_versions():
     print('torch version:', torch.__version__)
     print('cuda version:', torch.version.cuda)
     print('cudnn version: ', torch.backends.cudnn.version())
+
+
+def normalize(x):
+    norm = x.pow(2).sum(1, keepdim=True).pow(1. / 2)
+    out = x.div(norm)
+    return out
