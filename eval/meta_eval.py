@@ -162,7 +162,9 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR', mo
             pdist = distance.cdist(support_features, support_features, 'cosine')
             import matplotlib.pyplot as plt
             from scipy.io import savemat
-            savemat("result.mat", {'pdist': pdist, 'support_ys': support_ys, 'query_ys': query_ys})
+            features = np.vstack((support_features, query_features))
+            labels = np.concatenate((support_ys, query_ys))
+            savemat("result.mat", {'features': features, 'labels': labels})
 
 
             if classifier == 'LR':

@@ -44,7 +44,7 @@ def parse_option():
                         help='Number of test runs')
     parser.add_argument('--n_ways', type=int, default=5, metavar='N',
                         help='Number of classes for doing each classification run')
-    parser.add_argument('--n_shots', type=int, default=1, metavar='N',
+    parser.add_argument('--n_shots', type=int, default=5, metavar='N',
                         help='Number of shots in test')
     parser.add_argument('--n_queries', type=int, default=15, metavar='N',
                         help='Number of query in test')
