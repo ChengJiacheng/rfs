@@ -30,5 +30,4 @@ end
 histogram(temp(:), 50, 'Normalization','probability')
 
 legend('within-class', 'between-class')
-title('')
-figure()
+title('cosine distance')
