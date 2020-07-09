@@ -179,12 +179,11 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR', mo
 
 
 
-            # support_features, support_ys = np.vstack((support_features, query_features)), np.concatenate((support_ys, pseudo_labels))
-            # support_features, support_ys = get_basic_protos(support_features, support_ys)
+
 
             def get_rectified_protos(support_features, support_ys, query_features, query_ys):
                 num_classes = int(5)
-                K = 15
+                K = 3
 
                 cosine_similarity = - distance.cdist(query_features, basic_protos, 'cosine')
                 pseudo_labels = np.argmax(cosine_similarity, axis=1)     
@@ -198,18 +197,29 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR', mo
 
 
                     idx =  np.where(pseudo_labels==i)[0]      
-                    features = pseudo_features[idx]
+                    features = query_features[idx]
                     labels = pseudo_labels[idx]
 
                     scores = cosine_similarity[idx, i]
 
+                    idx = np.argsort(scores)[::-1]
+
+
                     temp = np.min([len(idx), K])
 
-            get_rectified_protos(support_features, support_ys, query_features, query_ys)
+                    features_pseudo = np.vstack((features_pseudo, features[idx[1:temp]]))
+                    labels_pseudo = np.concatenate((labels_pseudo, labels[idx[1:temp]]))
+
+                rectified_protos, rectified_protos_ys = get_basic_protos(np.vstack((support_features, features_pseudo)), np.concatenate((support_ys, labels_pseudo)))
+                return rectified_protos, rectified_protos_ys
+
+            # rectified_protos, rectified_protos_ys = get_rectified_protos(support_features, support_ys, query_features, query_ys)
+            # support_features, support_ys = rectified_protos, rectified_protos_ys
 
 
 
-
+            # support_features, support_ys = np.vstack((support_features, query_features)), np.concatenate((support_ys, pseudo_labels))
+            support_features, support_ys = get_basic_protos(support_features, support_ys)
                
 
 

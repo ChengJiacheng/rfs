@@ -45,7 +45,7 @@ def parse_option():
                         help='Number of test runs')
     parser.add_argument('--n_ways', type=int, default=5, metavar='N',
                         help='Number of classes for doing each classification run')
-    parser.add_argument('--n_shots', type=int, default=1, metavar='N',
+    parser.add_argument('--n_shots', type=int, default=20, metavar='N',
                         help='Number of shots in test')
     parser.add_argument('--n_queries', type=int, default=15, metavar='N',
                         help='Number of query in test')
@@ -218,10 +218,10 @@ if __name__ == '__main__':
     # test_time = time.time() - start
     # print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, test_time))
 
-    start = time.time()
-    test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False, classifier=opt.classifier, model_list=model_list)
-    test_time = time.time() - start
-    print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
+    # start = time.time()
+    # test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False, classifier=opt.classifier, model_list=model_list)
+    # test_time = time.time() - start
+    # print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
 
 
     # start = time.time()
