@@ -29,7 +29,8 @@ def parse_option():
     # parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_distilled/S:resnet12_T:resnet12_miniImageNet_kd_r:0.5_a:1.0_b:0_trans_A_born1/resnet12_last.pth', help='absolute path to .pth model')
     # parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_22/resnet12_last.pth')
     # parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_x3/resnet12_last.pth')
-    parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_4/resnet12_last.pth')
+    # parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_pretrained/resnet12_miniImageNet_lr_0.05_decay_0.0005_trans_A_trial_4/resnet12_last.pth')
+    parser.add_argument('--model_path', type=str, default='/data/jiacheng/rfs/models_distilled/S:resnet12_T:resnet12_miniImageNet_kd_r:0.5_a:1.0_b:0_trans_A_born1/resnet12_last.pth')
 
     # dataset
     parser.add_argument('--dataset', type=str, default='miniImageNet', choices=['miniImageNet', 'tieredImageNet',
@@ -44,7 +45,7 @@ def parse_option():
                         help='Number of test runs')
     parser.add_argument('--n_ways', type=int, default=5, metavar='N',
                         help='Number of classes for doing each classification run')
-    parser.add_argument('--n_shots', type=int, default=5, metavar='N',
+    parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='Number of shots in test')
     parser.add_argument('--n_queries', type=int, default=15, metavar='N',
                         help='Number of query in test')
@@ -55,7 +56,7 @@ def parse_option():
     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
                         help='Size of test batch)')
 
-    parser.add_argument('--classifier', type=str, default='LR', help='type of used classifier', choices=['kNN', 'LDA','QDA', 'LR', 'NN', 'Cosine', 'SGB', 'CVGB', 'AdaBoost', 'SVM', 'bagging', 'ensemble', 'LabelSpreading', 'LabelPropagation'])
+    parser.add_argument('--classifier', type=str, default='Cosine', help='type of used classifier', choices=['kNN', 'LDA','QDA', 'LR', 'NN', 'Cosine', 'SGB', 'CVGB', 'AdaBoost', 'SVM', 'bagging', 'ensemble', 'LabelSpreading', 'LabelPropagation'])
     parser.add_argument('--l2_normalize', default=False)
    
     opt = parser.parse_args()
@@ -223,10 +224,10 @@ if __name__ == '__main__':
     print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
 
 
-    start = time.time()
-    test_acc, test_std = meta_test(model, meta_testloader, is_norm=False, classifier=opt.classifier, model_list=model_list)
-    test_time = time.time() - start
-    print('test_acc (no normalization): {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, test_time))
+    # start = time.time()
+    # test_acc, test_std = meta_test(model, meta_testloader, is_norm=False, classifier=opt.classifier, model_list=model_list)
+    # test_time = time.time() - start
+    # print('test_acc (no normalization): {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, test_time))
 
     start = time.time()
     test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False, is_norm=False, classifier=opt.classifier)

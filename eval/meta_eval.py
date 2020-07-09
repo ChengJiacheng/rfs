@@ -22,6 +22,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import BaggingClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.neighbors import KNeighborsClassifier
+from scipy.spatial import distance
 
 import time
 
@@ -158,38 +159,94 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR', mo
             support_ys = support_ys.view(-1).numpy()
             query_ys = query_ys.view(-1).numpy()
 
-            from scipy.spatial import distance
-            pdist = distance.cdist(support_features, support_features, 'cosine')
-            import matplotlib.pyplot as plt
-            from scipy.io import savemat
-            features = np.vstack((support_features, query_features))
-            labels = np.concatenate((support_ys, query_ys))
-            savemat("result.mat", {'features': features, 'labels': labels})
+            def get_basic_protos(support_features, support_ys):
+                from sklearn import preprocessing
+
+                num_classes = int(5)
+                basic_protos = np.zeros([num_classes, support_features.shape[1]])
+                basic_protos_ys = np.arange(0, num_classes)
+                for i in range(num_classes):
+                    basic_protos[i] = support_features[support_ys==i].mean(axis=0)
+
+                # l2_norm = is_norm
+                if is_norm:
+                    basic_protos = preprocessing.normalize(basic_protos, norm='l2', axis=1)
+
+                return basic_protos, basic_protos_ys
+
+            basic_protos, basic_protos_ys = get_basic_protos(support_features, support_ys)
+
+
+
+
+            # support_features, support_ys = np.vstack((support_features, query_features)), np.concatenate((support_ys, pseudo_labels))
+            # support_features, support_ys = get_basic_protos(support_features, support_ys)
+
+            def get_rectified_protos(support_features, support_ys, query_features, query_ys):
+                num_classes = int(5)
+                K = 15
+
+                cosine_similarity = - distance.cdist(query_features, basic_protos, 'cosine')
+                pseudo_labels = np.argmax(cosine_similarity, axis=1)     
+
+                features_pseudo = np.zeros([0, support_features.shape[1]])
+                labels_pseudo = np.array([])
+
+                for i in range(num_classes):
+
+                    
+
+
+                    idx =  np.where(pseudo_labels==i)[0]      
+                    features = pseudo_features[idx]
+                    labels = pseudo_labels[idx]
+
+                    scores = cosine_similarity[idx, i]
+
+                    temp = np.min([len(idx), K])
+
+            get_rectified_protos(support_features, support_ys, query_features, query_ys)
+
+
+
+
+               
+
+
+            
+
+
+            # pdist = distance.cdist(support_features, support_features, 'cosine')
+            # import matplotlib.pyplot as plt
+            # from scipy.io import savemat
+            # features = np.vstack((support_features, query_features))
+            # labels = np.concatenate((support_ys, query_ys))
+            # savemat("result.mat", {'features': features, 'labels': labels})
 
 
             if classifier == 'LR':
-                clf = LogisticRegression(random_state=0, solver='sag', max_iter=100, multi_class='multinomial', tol=1e-4, verbose=0, fit_intercept=False, C=1, penalty='l2')
+                clf = LogisticRegression(random_state=0, solver='sag', max_iter=1000, multi_class='multinomial', tol=1e-4, verbose=0, fit_intercept=True, C=1, penalty='l2')
                 clf.fit(support_features, support_ys)
 
                 query_ys_pred = clf.predict(query_features)
 
                 
 
-                query_proba = clf.predict_proba(query_features)
-                query_proba = np.max(query_proba, axis=1)
-                idx_pseudo = np.where(query_proba>0.25)[0]
-                print(len(idx_pseudo))
+                # query_proba = clf.predict_proba(query_features)
+                # query_proba = np.max(query_proba, axis=1)
+                # idx_pseudo = np.where(query_proba>0.25)[0]
+                # print(len(idx_pseudo))
 
-                # query_ys[idx_pseudo] == query_ys_pred[idx_pseudo]
+                # # query_ys[idx_pseudo] == query_ys_pred[idx_pseudo]
 
-                clf = LogisticRegression(random_state=0, solver='sag', max_iter=100, multi_class='multinomial', tol=1e-4, verbose=0, fit_intercept=False, C=1, penalty='l2')
-                clf.fit(np.vstack((query_features[idx_pseudo], support_features)), np.concatenate((query_ys_pred[idx_pseudo], support_ys), axis=None))
-                query_ys_pred = clf.predict(query_features)
+                # clf = LogisticRegression(random_state=0, solver='sag', max_iter=100, multi_class='multinomial', tol=1e-4, verbose=0, fit_intercept=False, C=1, penalty='l2')
+                # clf.fit(np.vstack((query_features[idx_pseudo], support_features)), np.concatenate((query_ys_pred[idx_pseudo], support_ys), axis=None))
+                # query_ys_pred = clf.predict(query_features)
 
-                # clf.score(query_features, query_ys)
-                # acc.append(clf.score(query_features, query_ys))
+                # # clf.score(query_features, query_ys)
+                # # acc.append(clf.score(query_features, query_ys))
 
-                # print("train acc: %f"%(clf.score(support_features, support_ys)) )
+                # # print("train acc: %f"%(clf.score(support_features, support_ys)) )
 
             elif classifier == 'gcn':
                 from pygcn.models import GCN
@@ -397,12 +454,14 @@ def NN(support, support_ys, query):
 
 def Cosine(support, support_ys, query):
     """Cosine classifier"""
-    support_norm = np.linalg.norm(support, axis=1, keepdims=True)
-    support = support / support_norm
-    query_norm = np.linalg.norm(query, axis=1, keepdims=True)
-    query = query / query_norm
+    # support_norm = np.linalg.norm(support, axis=1, keepdims=True)
+    # support = support / support_norm
+    # query_norm = np.linalg.norm(query, axis=1, keepdims=True)
+    # query = query / query_norm
+    # cosine_distance = query @ support.transpose()
 
-    cosine_distance = query @ support.transpose()
+    cosine_distance = - distance.cdist(query, support, 'cosine')
+
     max_idx = np.argmax(cosine_distance, axis=1)
     pred = [support_ys[idx] for idx in max_idx]
     return pred
